@@ -64,13 +64,16 @@ yo <- function(datez=Sys.Date()-1,complete.sub = 90){
   urlz <- "https://data.cdc.gov/resource/8xkx-amqh.json?$where=date>='2022-01-20'"
   tokenz<-'chCxsk4zel6QXbaemotF65C9L'
   
-  covid2 <- read.socrata(
+read.socrata(
     urlz,
     app_token = tokenz,
     #####
     email     = "tim.wiemken@gmail.com",
     password  =  "ThisIsNotAGoodP@ssw0rd!!!"
-  )
+  ) %>%
+  tibble()-> covid2 
+covid2 <- covid2[,-c(47:51)]
+  
   
   # merge these two COVID sets (old and new) and do some cleaning. 
   covid3 <- rbind(covid, covid2)
