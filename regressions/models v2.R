@@ -1,4 +1,9 @@
+#### READ SOURCE TO MAKE DATA 
+
 source("/Users/timothywiemken/OneDrive - Pfizer/Documents/Research/covidvax/regressions/build data for models.R")
+df <- yo(datez="2022-01-08")
+
+
 
 #### merge in other stuff - may be specific to date. 
 
@@ -12,17 +17,22 @@ source("/Users/timothywiemken/OneDrive - Pfizer/Documents/Research/covidvax/regr
 
 #### 5+
 library(MASS)
-out <- MASS::glm.nb(series_complete_5plus ~ as.numeric(social_vulnerability_index) + 
-                      pct_female + deaths + factor(ruca) + offset(log(pop)), data=df)
+out_5_2dose <- MASS::glm.nb(series_complete_5plus ~ as.numeric(social_vulnerability_index) + 
+                      pct_female + deaths + factor(ruca) + factor(chr_outcome_quartile) +
+                        offset(log(pop_5plus)), data=df)
+summary(out_5_2dose)
 
 #### 18+
-out <- MASS::glm.nb(series_complete_5plus ~ as.numeric(social_vulnerability_index) + 
-                      pct_female + deaths + factor(ruca) + offset(log(pop)), data=df)
+out_18_2dose <- MASS::glm.nb(series_complete_18plus ~ as.numeric(social_vulnerability_index) + 
+                      pct_female + deaths + factor(ruca) + factor(chr_outcome_quartile) + 
+                        factor(chr_factor_quartile) + offset(log(pop_18plus)), data=df)
+summary(out_18_2dose)
 
 #### 65+
-mod.lm.primary65 <- lm(as.numeric(series_complete_65pluspop_pct)  ~ as.numeric(social_vulnerability_index) + 
-                         pct_female + deaths + factor(ruca), data=df)
-summary(mod.lm.primary65)
+out_65_2dose <- MASS::glm.nb(series_complete_65plus ~ as.numeric(social_vulnerability_index) + 
+                      pct_female + deaths + factor(ruca) + factor(chr_outcome_quartile) + 
+                        factor(chr_factor_quartile) +  offset(log(pop_65plus)), data=df)
+summary(out_65_2dose)
 
 
 
@@ -31,23 +41,3 @@ summary(mod.lm.primary65)
 ####### BOOSTERS  ###############################################################################################
 #################################################################################################################
 #################################################################################################################
-#### OF ALL FULLY VAXXED
-mod.lm.boost.all <- lm(as.numeric(booster_doses_vax_pct)  ~ as.numeric(social_vulnerability_index) + 
-                         pct_female + deaths + factor(ruca), data=df)
-summary(mod.lm.boost.all)
-
-#### OF 18+ FULLY VAXXED
-mod.lm.boost18 <- lm(as.numeric(booster_doses_18plus_vax_pct)  ~ as.numeric(social_vulnerability_index) + 
-                       pct_female + deaths + factor(ruca), data=df)
-summary(mod.lm.boost18)
-
-#### OF 65+ FULLY VAXXED
-mod.lm.boost65 <- lm(as.numeric(booster_doses_65plus_vax_pct)  ~ as.numeric(social_vulnerability_index) + 
-                       pct_female + deaths + factor(ruca), data=df)
-summary(mod.lm.boost65)
-
-
-library(MASS)
-out <- MASS::glm.nb(booster_doses_18plus ~ as.numeric(social_vulnerability_index) + 
-                      pct_female + deaths + factor(ruca) + offset(log(pop)), data=df)
-summary(out)

@@ -16,10 +16,14 @@ library(tidycensus)
 library(feather)
 sf::sf_use_s2(FALSE)
 
-#setwd("/Users/timothywiemken/OneDrive - Pfizer/Documents/Research/covidvax")
+setwd("/Users/timothywiemken/OneDrive - Pfizer/Documents/Research/COVID disparities/extra data")
+# ==============================================================================
+# ==============================================================================
+# BASE COVID DATA
+# ==============================================================================
+# ==============================================================================
 
-#tidycensus::census_api_key("1bea7542b64a438650b457bd6609c1d7bd75cbaa", install=T)
-### pull current date for covid data##
+#### This pulls latest available date. Will use this later. 
 urlz <- paste0("https://data.cdc.gov/resource/8xkx-amqh.json?$select=date&$limit=1")
 tokenz<-'chCxsk4zel6QXbaemotF65C9L'
 pull(read.socrata(
@@ -30,30 +34,33 @@ pull(read.socrata(
 
 
 
-#### begin function
+# ==============================================================================
+# ==============================================================================
+# FUNCTION to be able to subset date easily. 
+# ==============================================================================
+# ==============================================================================
 yo <- function(datez=Sys.Date()-1,complete.sub = 90){
-  sf::sf_use_s2(FALSE)
-  #=======================================================================
-  # hesitancy
-  # COVID hesitancy data: https://data.cdc.gov/Vaccinations/Vaccine-Hesitancy-for-COVID-19-County-and-local-es/q9mh-h2tw
 
+  
+  #=======================================================================
+  # COVID hesitancy data: https://data.cdc.gov/Vaccinations/Vaccine-Hesitancy-for-COVID-19-County-and-local-es/q9mh-h2tw
+  #=======================================================================
+  
   hesitancy <- arrow::read_feather("hesitancy.feather")
+  
+  
+  
   
   # ======================================================================
   # COVID data: https://data.cdc.gov/Vaccinations/COVID-19-Vaccinations-in-the-United-States-County/8xkx-amqh
   # ======================================================================
-  #####
-  
-  # df1 <- read.fst("df1.fst")
-  # df2 <- read.fst("df2.fst")
-  # df3 <- read.fst("df3.fst")
-  # 
+
+  # Start by pulling old data - made this previously so its not so slow using only socrata
+  # pulled data on 1-19-2022
   covid <- arrow::read_feather("covid.feather")
-  # rm(df1)
-  # rm(df2)
-  # rm(df3)
-  
-  ## make url for socrata
+
+  # Now pull new data
+  # make url for socrata
   urlz <- "https://data.cdc.gov/resource/8xkx-amqh.json?$where=date>='2022-01-20'"
   tokenz<-'chCxsk4zel6QXbaemotF65C9L'
   
@@ -65,41 +72,34 @@ yo <- function(datez=Sys.Date()-1,complete.sub = 90){
     password  =  "ThisIsNotAGoodP@ssw0rd!!!"
   )
   
-  #write.csv(covid, "~/Desktop/covid.csv", row.names=F, na="")
-  
-  # 
+  # merge these two COVID sets (old and new) and do some cleaning. 
   covid3 <- rbind(covid, covid2)
   covid <- subset(covid3, covid3$date == datez)
   rm(covid2)
   rm(covid3)
   
-  if(nrow(covid)==0){stop("Data not avaiable for date selected, please choose an earlier date.")}
+
   
-  # ============================================================
-  # PULL NYT DATA ==============================================
-  # ============================================================
+  # ===========================================================================
+  # PULL NYT DATA 
+  # ===========================================================================
   
-  covid_cases_deaths <- vroom("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv")
-  covid_cases_deaths<-covid_cases_deaths[,c(1,4,5,6)]
-  covid_cases_deaths$fips <- stringr::str_pad(covid_cases_deaths$fips, pad="0", side="left", width=5)
+  nyt <- vroom("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv")
+  nyt<-nyt[,c(1,4,5,6)]
+  nyt$fips <- stringr::str_pad(nyt$fips, pad="0", side="left", width=5)
   
-  covid_cases_deaths<-setDT(covid_cases_deaths)
-  covid_cases_deaths <- setorder(covid_cases_deaths, date)
-  covid_cases_deaths <- covid_cases_deaths[date == datez, .SD, by=c("fips", "date")]
-  #pops <- vroom::vroom("/Users/timwiemken/Library/Mobile Documents/com~apple~CloudDocs/Work/Pfizer/covidvax/pop_2019.csv")
+  nyt<-setDT(nyt)
+  nyt <- setorder(nyt, date)
+  nyt <- nyt[date == datez, .SD, by=c("fips", "date")]
+
+  # COUNTY POPULATIONS OVERALL TO MAKE RATES
   pops <- vroom("pop_2019.csv")
   pops$fips <- stringr::str_pad(pops$fips, pad="0", side="left", width=5)
-  covid_cases_deaths <- merge(covid_cases_deaths, pops, by="fips")
-  covid_cases_deaths$cases <- (covid_cases_deaths$cases / covid_cases_deaths$pop)*10000
-  covid_cases_deaths$deaths <- (covid_cases_deaths$deaths / covid_cases_deaths$pop)*10000
-  covid_cases_deaths$deaths_per_case <- (covid_cases_deaths$deaths / covid_cases_deaths$cases)*100
-  covid_cases_deaths<-covid_cases_deaths
-  
-  
-  # ============================================================
-  # 2019 County Population Tidycensus 8/5/2021==================
-  # ============================================================
-  
+  nyt <- merge(nyt, pops, by="fips")
+  nyt$case_rate <- (nyt$cases / nyt$pop)*10000
+  nyt$death_rate <- (nyt$deaths / nyt$pop)*10000
+  nyt$deaths_per_case <- (nyt$deaths / nyt$cases)*100
+
   
   
   # ============================================================
@@ -115,18 +115,18 @@ yo <- function(datez=Sys.Date()-1,complete.sub = 90){
     mutate(across(all_of(names(covid)[c(3, 6:15)]), as.numeric),
            fips = stringr::str_pad(fips, side="left", pad="0", width=5)) -> covid
   
-  # ============================================================
-  # =========== DROP UNMATCHED COUNTIES IN COVID================
-  # ============================================================
-  rmz1<-setdiff(covid$fips, hesitancy$fips)
-  covid <- subset(covid, covid$fips%nin%rmz1)
-  rmz2 <- setdiff(covid$fips, covid_cases_deaths$fips)
-  covid <- subset(covid, covid$fips%nin%rmz2)
-  
-  # ============================================================
-  # =========== DROP FIPS THAT DONT HAVE DATA PER CDC===========
-  # ============================================================
-  rmz3 <- covid$fips[covid$recip_state %in% c("HI", "TX") | covid$completeness_pct==0]
+  # # ============================================================
+  # # =========== DROP UNMATCHED COUNTIES IN COVID================
+  # # ============================================================
+  # rmz1<-setdiff(covid$fips, hesitancy$fips)
+  # covid <- subset(covid, covid$fips%nin%rmz1)
+  # rmz2 <- setdiff(covid$fips, nyt$fips)
+  # covid <- subset(covid, covid$fips%nin%rmz2)
+  # 
+  # # ============================================================
+  # # =========== DROP FIPS THAT DONT HAVE DATA PER CDC===========
+  # # ============================================================
+  # rmz3 <- covid$fips[covid$recip_state %in% c("HI", "TX") | covid$completeness_pct==0]
   
   # ============================================================
   # =========== PULL MAPS AND MERGE ============================
@@ -142,6 +142,9 @@ yo <- function(datez=Sys.Date()-1,complete.sub = 90){
   
   # covid and hesitancy
   df <- merge(covid, hesitancy, by="fips")
+  rm(covid)
+  rm(hesitancy)
+  gc()
   
   df %>%
     group_by(recip_state) %>%
@@ -151,36 +154,29 @@ yo <- function(datez=Sys.Date()-1,complete.sub = 90){
   
   # map with df
   df.sf <- merge(counties, df, by="fips")
+  rm(counties)
+  rm(df)
+  gc()
   
   # case/death with all
-  df.sf <- merge(df.sf, covid_cases_deaths, by="fips")
+  df.sf <- merge(df.sf, nyt, by="fips")
+  rm(nyt)
+  gc()
+  
   
   # ============================================================
-  # =========== Merge Census data ==============================
+  # =========== Merge Census data 
   # ============================================================
-  #census_demog <- vroom::vroom("/Users/timwiemken/Library/Mobile Documents/com~apple~CloudDocs/Work/Pfizer/covidvax/census_demog.csv")
-  
   census_demog <- vroom::vroom("census_demog.csv")
   
   df.sf <- merge(df.sf, census_demog, by.x="fips", by.y="GEOID", all.x=T)
+  rm(census_demog)
+  gc()
   
-  
   # ============================================================
-  # =========== Missing FIPS for maps  =========================
+  # =========== Rural urban codes and mod per Prener============
   # ============================================================
-  df.missing.fips <- subset(counties, counties$fips%in%c(rmz1, rmz2, rmz3))
-  df.subs <- subset(df.sf, df.sf$completeness_pct<complete.sub)
-  df.missing.fips2 <- subset(counties, counties$fips%in%df.subs$fips)
-  df.missing.fips <- rbind(df.missing.fips2, df.missing.fips)
-  #df.missing.fips3 <- subset(df.sf, is.na(df.sf[,xvar]) | is.na(df.sf[,yvar]))
-  df.missing.fips <- df.missing.fips[,names(df.missing.fips)]
-
-  # ============================================================
-  # =========== Non MISSING FIPS for ANALYSIS =========================
-  # ============================================================
-  df.sf <- df.sf[df.sf$fips %nin% df.missing.fips$fips,]
-  
-  ruca <- vroom::vroom("/Users/timothywiemken/OneDrive - Pfizer/Documents/Research/covidvax/regressions/other data/NCHSURCodes2013.csv")
+  ruca <- vroom::vroom("NCHSURCodes2013.csv")
   ruca %>%
     mutate(
       ., ruca = case_when(
@@ -193,10 +189,59 @@ yo <- function(datez=Sys.Date()-1,complete.sub = 90){
   ruca <- ruca[,-3]
   
   df.sf <- merge(df.sf, ruca, by="fips", all.x=T)
+  rm(ruca)
+  gc()
   
+  # ============================================================
+  # =========== County Health Rankings, overall and sub ========
+  # ============================================================
+ vroom::vroom("2021_chr_overall.csv") %>%
+    janitor::clean_names() %>%
+    filter(!is.na(county))  -> chr_full
+  df.sf <- merge(df.sf, chr_full, by="fips")
+  rm(chr_full)
+  gc()
+  
+  vroom::vroom("2021_chr_subs.csv") %>%
+    janitor::clean_names() %>%
+    filter(!is.na(county))  -> chr_sub
+  df.sf <- merge(df.sf, chr_sub, by="fips")
+  rm(chr_sub)
+  gc()
+
+  df.sf$chr_outcome_quartile <- ifelse(df.sf$chr_outcome_quartile=="NR", NA,
+                                       ifelse(df.sf$chr_outcome_quartile=="5", NA,
+                                              df.sf$chr_outcome_quartile))
+  df.sf$chr_factor_quartile <- ifelse(df.sf$chr_factor_quartile=="NR", NA,
+                                       ifelse(df.sf$chr_factor_quartile=="5", NA,
+                                              df.sf$chr_factor_quartile))
+  # =======================================================================
+  # County populations by age groups for modeling (offsets)
+  # =======================================================================
+read_feather("county_pop_age.feather") %>%
+    janitor::clean_names() -> county_pops
+  df.sf <- merge(df.sf, county_pops, by="fips")
+  rm(county_pops)
+  gc()
+  
+  
+  ### clean the rest
+  rm(dt)
+  rm(tokenz)
+  rm(urlz)
+  
+  # =======================================================================
+  # END
+  # =======================================================================
   return(df.sf) 
 }
 
 
-df <- yo(datez="2022-01-08")
+
+
+
+# =======================================================================
+# Example Run
+# =======================================================================
+#df <- yo(datez="2022-01-08")
 
