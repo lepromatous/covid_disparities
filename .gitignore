@@ -2,6 +2,14 @@
 .Rhistory
 .Rapp.history
 
+# file types
+*.csv
+*.txt
+*.feather
+*.fst
+*.xlsx
+*.xls
+
 # Session Data files
 .RData
 
