@@ -5,6 +5,8 @@ df <- yo(datez="2022-01-08")
 
 df$social_vulnerability_index <- as.numeric(as.character(df$social_vulnerability_index))
 df$social_vulnerability_index10 <- as.numeric(df$social_vulnerability_index)/10
+df$adi10 <- as.numeric(df$adi)/10
+
 df$pct_female <- as.numeric(df$pct_female)/5
 #### merge in other stuff - may be specific to date. 
 

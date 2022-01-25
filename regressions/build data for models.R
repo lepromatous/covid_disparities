@@ -227,8 +227,21 @@ read_feather("county_pop_age.feather") %>%
   rm(county_pops)
   gc()
   
+  # ============================================================
+  # =========== ADD BROADSTREET ADI ============================
+  # ============================================================
+  adi <- vroom::vroom("adi")
+  adi %>%
+    filter(year==2020) %>%
+    rename(
+      fips = 3,
+      adi =8
+    )  -> adi
+  adi <- adi[,c("fips", "adi")]
+  df.sf <- merge(df.sf, adi, by="fips", all.x=T)
   
   ### clean the rest
+  rm(adi)
   rm(dt)
   rm(tokenz)
   rm(urlz)
@@ -242,9 +255,9 @@ read_feather("county_pop_age.feather") %>%
 
 
 
-
 # =======================================================================
 # Example Run
 # =======================================================================
-#df <- yo(datez="2022-01-08")
+#f <- yo(datez="2022-01-08")
+
 
