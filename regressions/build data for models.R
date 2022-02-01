@@ -16,7 +16,7 @@ library(tidycensus)
 library(feather)
 sf::sf_use_s2(FALSE)
 
-setwd("/Users/timothywiemken/OneDrive - Pfizer/Documents/Research/COVID disparities/extra data")
+setwd("/Users/timothywiemken/OneDrive - Pfizer/Documents/Research/github/COVID disparities/extra data")
 # ==============================================================================
 # ==============================================================================
 # BASE COVID DATA
@@ -245,6 +245,12 @@ read_feather("county_pop_age.feather") %>%
   rm(dt)
   rm(tokenz)
   rm(urlz)
+  
+  prener <- vroom::vroom("county_svi.csv")
+  prener$fips[nchar(prener$fips)==4]<-stringr::str_pad(prener$fips[nchar(prener$fips)==4], pad="0", side="left", width=5)
+  
+  df.sf <- merge(df.sf, prener, by="fips", all.x=T)
+  
   
   # =======================================================================
   # END

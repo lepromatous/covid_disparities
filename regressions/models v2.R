@@ -1,13 +1,31 @@
-#### READ SOURCE TO MAKE DATA 
 
-source("/Users/timothywiemken/OneDrive - Pfizer/Documents/Research/COVID disparities/covid_disparities/regressions/build data for models.R")
-df <- yo(datez="2022-01-08")
 
-df$social_vulnerability_index <- as.numeric(as.character(df$social_vulnerability_index))
-df$social_vulnerability_index10 <- as.numeric(df$social_vulnerability_index)/10
-df$adi10 <- as.numeric(df$adi)/10
 
-df$pct_female <- as.numeric(df$pct_female)/5
+
+
+
+library(MASS)
+nb.18 <- glm.nb(booster_doses_18plus ~ social_vulnerability_index + 
+                  pct_births + 
+                  estimated_hesitant +
+                  death_rate_100k +
+                  case_rate_100k +
+                  offset(log(series_complete_18plus)),
+                data=df.boost18)
+mod.nb.18 <- broom::tidy(nb.18)
+mod.nb.18$rr <- round(exp(mod.nb.18$estimate),2)
+mod.nb.18$ci.lower <- exp(confint(nb.18))[,1]
+mod.nb.18$ci.upper <- exp(confint(nb.18))[,2]
+
+View(mod.nb.18)
+
+
+
+#sapply(df.boost18[,nmz], function(x) (cor.test(x, df.boost18$social_vulnerability_index)$estimate))
+
+
+
+
 #### merge in other stuff - may be specific to date. 
 
 #### things to add
@@ -20,6 +38,18 @@ df$pct_female <- as.numeric(df$pct_female)/5
 #################################################################################################################
 #################################################################################################################
 
+### lasso regression to pick varz
+
+require(glmnet) || install.packages("glmnet")
+library(glmnet)
+
+
+
+
+
+
+
+
 ### case, death, ACS insurance, NPI, 
 #### 5+
 library(MASS)
@@ -28,7 +58,7 @@ out_5_2dose <- MASS::glm.nb(series_complete_5plus ~ social_vulnerability_index10
                         offset(log(pop_5plus)), data=df)
 broom::tidy(out_5_2dose)
 1-exp(coef(out_5_2dose))
-summary(out_18_2dose)
+summary(out_5_2dose)
 
 #### 18+
 out_18_2dose <- MASS::glm.nb(series_complete_18plus ~ social_vulnerability_index10 + 
@@ -115,6 +145,33 @@ forestplotme(model=out_65_boosterdose, title="Booster Dose Series 65+")
 
 
 
+
+
+
+
+# #### find lambda
+# cv <- mpath::cv.glmregNB(booster_doses_18plus ~ ., data=df.boost18, offset=log(series_complete_18plus), nfolds=10,
+#             plot.it=TRUE, se=TRUE, n.cores=8, trace=FALSE,
+#             parallel=T)
+# 
+# test <- mpath::glmregNB(booster_doses_18plus ~ ., data=df.boost18, offset=log(series_complete_18plus), nlambda = 100, alpha=1,
+#                         parallel=TRUE, n.cores=8, lambda = cv$lambda.optim)
+# 
+# ### get vars > 3 decomal zero
+# noquote(row.names(test$beta)[round(test$beta, 4)>0])
+# 
+# 
+# nmz <- c(names(df.boost18)[grep("pct_", names(df.boost18))], "social_vulnerability_index", "estimated_hesitant")
+# for(i in 1:length(nmz)){
+#   df.boost18[,nmz[i]] <- df.boost18[,nmz[i]]/10
+# }
+# 
+# out2 <- lm(booster_doses_18plus ~ social_vulnerability_index + metro_status + chr_factor_quartile + 
+#              chr_ses_quartile + estimated_hesitant + pct_poverty +
+#              pct_over65 + pct_latino + pct_english_lwell + pct_multi_unit + pct_vacany + 
+#              pct_no_veh + pct_group + pct_ssi + pct_snap + pct_public_health + death_rate_100k, data=df.boost18)
+# regclass::VIF(out2)
+# 
 
 
 

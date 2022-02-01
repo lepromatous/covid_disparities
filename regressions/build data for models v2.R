@@ -1,0 +1,98 @@
+###############################################################################
+###############################################################################
+######## Make Data v2 #########################################################
+###############################################################################
+###############################################################################
+
+
+
+getdata <- function(datezz, num.var, denom.var){
+  source("/Users/timothywiemken/OneDrive - Pfizer/Documents/Research/github/COVID disparities/covid_disparities/regressions/build data for models.R")
+  df2 <- yo(datez=datezz)
+  df2$social_vulnerability_index <- as.numeric(as.character(df2$social_vulnerability_index))
+  
+  ls()[!(ls() %in% c('df2'))]
+  gc()
+  cat("\014")
+  
+  outs <- df2[,c("series_complete_yes", "series_complete_5plus", "series_complete_12plus", "series_complete_18plus", 
+                 "series_complete_65plus", "booster_doses", "booster_doses_18plus",
+                 "booster_doses_50plus", "booster_doses_65plus",
+                 "pop_5plus", "pop_12plus", "pop_18plus", 
+                 "pop_50plus", "pop_65plus")]
+  ivs <- df2[,c("census_area", "recip_state", "completeness_pct", 
+                "svi_ctgy", "social_vulnerability_index", "metro_status", "estimated_hesitant", "pop", "cases",
+                "deaths", "deaths_per_case","chr_outcome_quartile", "chr_factor_quartile",
+                "chr_heatlh_behav_quartile", "chr_clinical_care_quartile", "chr_ses_quartile", 
+                "chr_phys_enviro_quartile","total_housing", 
+                "total_households", "inc_median", "inc_per_cap", "pct_poverty", 
+                "pct_uemploy", "pct_lths", "pct_over65", "pct_under18", "pct_disable", 
+                "pct_single", "pct_race_white", "pct_race_black", "pct_race_native", 
+                "pct_race_aapi", "pct_race_other", "pct_race_nonwhite", "pct_latino", 
+                "pct_english_lwell", "pct_multi_unit", "pct_mobile", "pct_vacany", 
+                "pct_renter", "pct_crowded", "pct_no_veh", "pct_group", "pct_births", 
+                "pct_ss", "pct_ssi", "pct_tanf", "pct_snap", "pct_public_health", 
+                "pct_no_health"
+  )]
+  
+  df <- data.frame(outs, ivs)
+  sf::st_geometry(df) <- NULL
+  df <- df[,!names(df)%in% "geometry"]
+  df <- df[,!names(df)%in% "geometry.1"]
+  
+  rm(df2)
+  rm(dt)
+  rm(tokenz)
+  rm(urlz)
+  rm(yo)
+  gc()
+  cat("\014")
+  
+  require(mpath) || install.packages("mpath")
+  library(mpath)
+  
+  df<- df[,c(16,18,20,26:31, 1:15,17,19,21:25, 32:ncol(df))]
+  
+  names(df)
+  table(df$booster_doses_18plus)
+  View(df)
+  
+  df %>%
+    mutate(across(c(10:ncol(df)), as.numeric)) %>%
+    mutate(across(c(1:9), as.factor)) %>%
+    #drop_na() %>%
+    filter(
+      booster_doses_18plus !=0,
+      series_complete_18plus !=0
+    ) -> df
+  
+  df$case_rate_100k <- df$cases / df$pop *100000
+  df$death_rate_100k <- df$deaths / df$pop *100000
+  
+  df <- df[,c("svi_ctgy", "metro_status", "chr_outcome_quartile", 
+              "chr_factor_quartile", "chr_heatlh_behav_quartile", "chr_clinical_care_quartile", 
+              "chr_ses_quartile", "chr_phys_enviro_quartile", num.var, 
+              denom.var, 
+              "census_area", 
+              "completeness_pct", "social_vulnerability_index", "estimated_hesitant", 
+              "deaths_per_case", "total_housing", 
+              "total_households", "inc_median", "inc_per_cap", "pct_poverty", 
+              "pct_uemploy", "pct_lths", "pct_over65", "pct_under18", "pct_disable", 
+              "pct_single", "pct_race_white", "pct_race_black", "pct_race_native", 
+              "pct_race_aapi", "pct_race_other", "pct_race_nonwhite", "pct_latino", 
+              "pct_english_lwell", "pct_multi_unit", "pct_mobile", "pct_vacany", 
+              "pct_renter", "pct_crowded", "pct_no_veh", "pct_group", "pct_births", 
+              "pct_ss", "pct_ssi", "pct_tanf", "pct_snap", "pct_public_health", 
+              "pct_no_health", "case_rate_100k", "death_rate_100k")]
+  
+  return(df)
+}
+
+df.boost.dec <- getdata(datezz = "2021-12-25", num.var = "booster_doses_18plus", denom.var = "series_complete_18plus")
+write.csv(df.boost.dec, "~/Desktop/initial18_dec25.csv", row.names=F, na="")
+
+df.boost.jan <- getdata(datezz = "2022-01-25", num.var = "booster_doses_18plus", denom.var = "series_complete_18plus")
+write.csv(df.boost.dec, "~/Desktop/initial18_jan25.csv", row.names=F, na="")
+
+
+
