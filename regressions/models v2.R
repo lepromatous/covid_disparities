@@ -150,6 +150,9 @@ forestplotme(model=out_65_boosterdose, title="Booster Dose Series 65+")
 
 
 # #### find lambda
+##  
+# require(mpath) || install.packages("mpath")
+# library(mpath)
 # cv <- mpath::cv.glmregNB(booster_doses_18plus ~ ., data=df.boost18, offset=log(series_complete_18plus), nfolds=10,
 #             plot.it=TRUE, se=TRUE, n.cores=8, trace=FALSE,
 #             parallel=T)
