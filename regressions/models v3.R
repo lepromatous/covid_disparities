@@ -174,8 +174,8 @@ gtTable %>%
     cells_row_groups(groups = "**Primary Series Uptake**")
   ) -> out
 
-### rename 
-rowsout$`_data`$term <- c("Social Vulnerability Index", "Live Births (%)", "Estimated Hesitancy (%)", 
+### rename rows
+out$`_data`$term <- c("Social Vulnerability Index", "Live Births (%)", "Estimated Hesitancy (%)", 
                       "COVID-19 Death Rate/100k", "COVID-19 Case Rate/100k", "Social Vulnerability Index", "Live Births (%)", "Estimated Hesitancy (%)", 
                       "COVID-19 Death Rate/100k", "COVID-19 Case Rate/100k")
 out  
