@@ -27,7 +27,7 @@ getdata <- function(datezz, num.var, denom.var){
                 "pct_english_lwell", "pct_multi_unit", "pct_mobile", "pct_vacany", 
                 "pct_renter", "pct_crowded", "pct_no_veh", "pct_group", "pct_births", 
                 "pct_ss", "pct_ssi", "pct_tanf", "pct_snap", "pct_public_health", 
-                "pct_no_health"
+                "pct_no_health", "naat_tertile", "hhs_region"
   )]
   
   df <- data.frame(outs, ivs)
@@ -67,7 +67,10 @@ getdata <- function(datezz, num.var, denom.var){
               "pct_english_lwell", "pct_multi_unit", "pct_mobile", "pct_vacany", 
               "pct_renter", "pct_crowded", "pct_no_veh", "pct_group", "pct_births", 
               "pct_ss", "pct_ssi", "pct_tanf", "pct_snap", "pct_public_health", 
-              "pct_no_health", "case_rate_100k", "death_rate_100k")]
+              "pct_no_health", "case_rate_100k", "death_rate_100k", "naat_tertile", "hhs_region")]
+  
+  
+  
   
   return(df)
 }

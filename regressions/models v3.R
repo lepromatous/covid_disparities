@@ -9,35 +9,42 @@ df.boost.dec <- vroom::vroom("boost18_dec25.csv")
 df.boost.jan <- vroom::vroom("boost18_jan25.csv")
 
 
-modelme <- function(dat, outcome, offsetz){
-  library(MASS)
-      p1 <- paste(paste(outcome, " ~ social_vulnerability_index"), 
-                "pct_births",
-                "estimated_hesitant",
-                "death_rate_100k",
-                "case_rate_100k", sep=" + ")
-    
-    frm <- as.formula(paste(p1, " + offset(log(", offsetz,"))", sep=""))
-                                  
-      mod <- MASS::glm.nb(frm,
-                      data=dat)
-      mod_clean <- broom::tidy(mod)
-      mod_clean$rr <- round(exp(mod_clean$estimate),2)
-      mod_clean$ci.lower <- exp(confint(mod))[,1]
-      mod_clean$ci.upper <- exp(confint(mod))[,2]
-  
-  return(mod_clean)
-}
+
+
+
+
+
+
+
+# modelme <- function(dat, outcome, offsetz){
+#   library(MASS)
+#       p1 <- paste(paste(outcome, " ~ social_vulnerability_index"), 
+#                 "pct_births",
+#                 "estimated_hesitant",
+#                 "death_rate_100k",
+#                 "case_rate_100k", sep=" + ")
+#     
+#     frm <- as.formula(paste(p1, " + offset(log(", offsetz,"))", sep=""))
+#                                   
+#       mod <- MASS::glm.nb(frm,
+#                       data=dat)
+#       mod_clean <- broom::tidy(mod)
+#       mod_clean$rr <- round(exp(mod_clean$estimate),2)
+#       mod_clean$ci.lower <- exp(confint(mod))[,1]
+#       mod_clean$ci.upper <- exp(confint(mod))[,2]
+#   
+#   return(mod_clean)
+# }
 
 
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
 ##### MODEL 1: Primary Series, December 2021
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
 mod_p_dec <- MASS::glm.nb(series_complete_18plus ~ social_vulnerability_index + 
-                  pct_births +
                   estimated_hesitant +
                   death_rate_100k +
                   case_rate_100k + 
+                    factor(naat_tertile) +
                   offset(log(pop_18plus)), 
                 data=df.primary.dec)
     
@@ -59,10 +66,10 @@ mod_clean_p_dec %>%
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
 
 mod_b_dec <- MASS::glm.nb(booster_doses_18plus ~ social_vulnerability_index + 
-                            pct_births +
                             estimated_hesitant +
                             death_rate_100k +
                             case_rate_100k + 
+                            factor(naat_tertile) +
                             offset(log(series_complete_18plus)), 
                           data=df.boost.dec)
 
@@ -87,10 +94,10 @@ mod_clean_b_dec %>%
 ##### MODEL 3: Primary Series, January 2022
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
 mod_p_jan <- MASS::glm.nb(series_complete_18plus ~ social_vulnerability_index + 
-                            pct_births +
                             estimated_hesitant +
                             death_rate_100k +
                             case_rate_100k + 
+                            factor(naat_tertile) +
                             offset(log(pop_18plus)), 
                           data=df.primary.jan)
 
@@ -114,10 +121,10 @@ gt_primary_jan <- gt_primary_jan$`_data`
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
 
 mod_b_jan <- MASS::glm.nb(booster_doses_18plus ~ social_vulnerability_index + 
-                            pct_births +
                             estimated_hesitant +
                             death_rate_100k +
                             case_rate_100k + 
+                            factor(naat_tertile) +
                             offset(log(series_complete_18plus)), 
                           data=df.boost.jan)
 
@@ -143,17 +150,17 @@ fullTable = rbind(gt_primary_jan, gt_boost_jan)
 gtTable = gt(fullTable) %>%
   tab_row_group(
     label = md("**Primary Series Uptake**"),
-    rows = 1:5
+    rows = 1:6
   ) %>% 
   tab_row_group(
     label = md("**Booster Uptake**"),
-    rows = 6:10
+    rows = 7:12
   )
 
 gtTable %>%
   fmt_number(
     columns = 2:5,
-    decimals = 5
+    decimals = 4
   ) %>%
   cols_label(
     term = "Variable",
@@ -174,8 +181,11 @@ gtTable %>%
     cells_row_groups(groups = "**Primary Series Uptake**")
   ) -> out
 
+str(out)
+
 ### rename rows
-out$`_data`$term <- c("Social Vulnerability Index", "Live Births (%)", "Estimated Hesitancy (%)", 
-                      "COVID-19 Death Rate/100k", "COVID-19 Case Rate/100k", "Social Vulnerability Index", "Live Births (%)", "Estimated Hesitancy (%)", 
-                      "COVID-19 Death Rate/100k", "COVID-19 Case Rate/100k")
+out$`_data`$term <- c("Social Vulnerability Index", "Estimated Hesitancy (%)", 
+                      "COVID-19 Death Rate/100k", "COVID-19 Case Rate/100k", "NAAT Tertile 2 vs 1", "NAAT Tertile 3 vs 1",
+                      "Social Vulnerability Index", "Estimated Hesitancy (%)", 
+                      "COVID-19 Death Rate/100k", "COVID-19 Case Rate/100k","NAAT Tertile 2 vs 1", "NAAT Tertile 3 vs 1")
 out  

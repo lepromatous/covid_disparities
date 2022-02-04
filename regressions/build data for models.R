@@ -252,6 +252,62 @@ read_feather("county_pop_age.feather") %>%
   df.sf <- merge(df.sf, prener, by="fips", all.x=T)
   
   
+  
+  
+  naat <- vroom::vroom("https://s3.amazonaws.com/quartzdata/datasets/test-burden.csv")
+  naat %>%
+    rename(
+      fips = "fips_code"
+    ) %>%
+    mutate(
+      fips = stringr::str_pad(fips, side="left", pad="0", width=5)
+    ) -> naat
+  
+table(df.sf$state.x)  
+  df.sf <- merge(df.sf, naat, by="fips", all.x=T)
+  
+  ####make HHS region for clustering
+  df.sf$hhs_region <- NULL
+  df.sf$hhs_region[df.sf$state.x %in% c("Connecticut", "Maine", "Massachusetts", "New Hampshire", "Rhode Island", "Vermont")] <- 1
+  df.sf$hhs_region[df.sf$state.x %in% c("New Jersy", "New York", "Puerto Rico", "Virgin Islands")] <- 2
+  df.sf$hhs_region[df.sf$state.x %in% c("Delaware", "District of Columbia", "Maryland", "Pennsylvania", "Virginia", "West Virginia")] <- 3
+  df.sf$hhs_region[df.sf$state.x %in% c("Alabamaa", "Florida", "Georgia", "Kentucky", "Mississippi", "North Carolina", "South Carolina", "Tennessee")] <- 4
+  df.sf$hhs_region[df.sf$state.x %in% c("Illinois", "Indiana", "Michigan", "Minnesota", "Ohio", "Wisconsin")] <- 5
+  df.sf$hhs_region[df.sf$state.x %in% c("Arkansa", "Louisiana", "New Mexico", "Oklahoma", "Texas")] <- 6
+  df.sf$hhs_region[df.sf$state.x %in% c("Iowa", "Kansas", "Missouri", "Nebraska")] <- 7
+  df.sf$hhs_region[df.sf$state.x %in% c("Colorado", "Montana", "North D", "South D", "Utah", "Wyoming")] <- 8
+  df.sf$hhs_region[df.sf$state.x %in% c("Arizona", "California", "Hawaii", "Nevada")] <- 9
+  df.sf$hhs_region[df.sf$state.x %in% c("Alaska", "Idaho", "Oregon", "Washington")] <- 10
+  
+  
+  df.sf$hhs_region <- factor(df.sf$hhs_region, 
+                          levels=seq(1:10), 
+                          labels = c("Region 1 - Boston",
+                                     "Region 2 - New York",
+                                     "Region 3 - Philadelphia",
+                                     "Region 4 - Atlanta",
+                                     "Region 5 - Chicago",
+                                     "Region 6 - Dallas",
+                                     "Region 7 - Kansas City",
+                                     "Region 8 - Denver",
+                                     "Region 9 - San Francisco",
+                                     "Region 10 - Seattle"))
+  
+  
+  # Find tertiles
+  vTert = quantile(df.sf$total_test_results_reported_7_day_count_change_per_100K, c(0:3/3), na.rm=T)
+  
+  # classify values
+  df.sf$naat_tertile = with(df.sf, 
+                         cut(total_test_results_reported_7_day_count_change_per_100K, 
+                             vTert, 
+                             include.lowest = T, 
+                             labels = c("Low", "Medium", "High")))
+  
+  
+  
+  
+  
   # =======================================================================
   # END
   # =======================================================================
