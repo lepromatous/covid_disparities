@@ -246,7 +246,13 @@ read_feather("county_pop_age.feather") %>%
   rm(tokenz)
   rm(urlz)
   
-  prener <- vroom::vroom("county_svi.csv")
+  prener <- vroom::vroom("county_svi_expanded.csv")
+  names(prener) <-tolower(names(prener))
+  prener %>%
+    rename(
+      fips = "geoid"
+    ) -> prener
+  
   prener$fips[nchar(prener$fips)==4]<-stringr::str_pad(prener$fips[nchar(prener$fips)==4], pad="0", side="left", width=5)
   
   df.sf <- merge(df.sf, prener, by="fips", all.x=T)

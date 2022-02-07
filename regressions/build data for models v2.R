@@ -6,7 +6,7 @@
 
 
 
-getdata <- function(datezz, num.var, denom.var){
+getdata <- function(datezz="2022-01-18", num.var, denom.var){
   source("/Users/timothywiemken/OneDrive - Pfizer/Documents/Research/github/COVID disparities/covid_disparities/regressions/build data for models.R")
   df2 <- yo(datez=datezz)
 
@@ -27,8 +27,9 @@ getdata <- function(datezz, num.var, denom.var){
                 "pct_english_lwell", "pct_multi_unit", "pct_mobile", "pct_vacany", 
                 "pct_renter", "pct_crowded", "pct_no_veh", "pct_group", "pct_births", 
                 "pct_ss", "pct_ssi", "pct_tanf", "pct_snap", "pct_public_health", 
-                "pct_no_health", "naat_tertile", "hhs_region"
-  )]
+                "pct_no_health", "naat_tertile", "hhs_region", "rpl_theme1", "rpl_them2",
+                "rpl_theme3", "rpl_theme4"
+                 )]
   
   df <- data.frame(outs, ivs)
   #sf::st_geometry(df) <- NULL
@@ -67,7 +68,9 @@ getdata <- function(datezz, num.var, denom.var){
               "pct_english_lwell", "pct_multi_unit", "pct_mobile", "pct_vacany", 
               "pct_renter", "pct_crowded", "pct_no_veh", "pct_group", "pct_births", 
               "pct_ss", "pct_ssi", "pct_tanf", "pct_snap", "pct_public_health", 
-              "pct_no_health", "case_rate_100k", "death_rate_100k", "naat_tertile", "hhs_region")]
+              "pct_no_health", "case_rate_100k", "death_rate_100k", "naat_tertile", "hhs_region",
+              "rpl_theme1", "rpl_them2",
+              "rpl_theme3", "rpl_theme4")]
   
   
   
