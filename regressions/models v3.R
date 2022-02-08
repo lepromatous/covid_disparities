@@ -1,12 +1,17 @@
 library(gt)
 library(vroom)
+library(tidyverse)
 
 
 setwd("/Users/timothywiemken/Library/CloudStorage/OneDrive-Pfizer/Documents/Research/github/COVID disparities/covid_disparities/main data/")
 df.primary.dec <- vroom::vroom("primary18_dec25.csv")
+df.primary.dec$social_vulnerability_index5 <- df.primary.dec$social_vulnerability_index/5
 df.primary.jan <- vroom::vroom("primary18_jan25.csv")
+df.primary.jan$social_vulnerability_index5 <- df.primary.jan$social_vulnerability_index/5
 df.boost.dec <- vroom::vroom("boost18_dec25.csv")
+df.boost.dec$social_vulnerability_index5 <- df.boost.dec$social_vulnerability_index/5
 df.boost.jan <- vroom::vroom("boost18_jan25.csv")
+df.boost.jan$social_vulnerability_index5 <- df.boost.jan$social_vulnerability_index/5
 
 
 
@@ -14,37 +19,16 @@ df.boost.jan <- vroom::vroom("boost18_jan25.csv")
 
 
 
-
-
-# modelme <- function(dat, outcome, offsetz){
-#   library(MASS)
-#       p1 <- paste(paste(outcome, " ~ social_vulnerability_index"), 
-#                 "pct_births",
-#                 "estimated_hesitant",
-#                 "death_rate_100k",
-#                 "case_rate_100k", sep=" + ")
-#     
-#     frm <- as.formula(paste(p1, " + offset(log(", offsetz,"))", sep=""))
-#                                   
-#       mod <- MASS::glm.nb(frm,
-#                       data=dat)
-#       mod_clean <- broom::tidy(mod)
-#       mod_clean$rr <- round(exp(mod_clean$estimate),2)
-#       mod_clean$ci.lower <- exp(confint(mod))[,1]
-#       mod_clean$ci.upper <- exp(confint(mod))[,2]
-#   
-#   return(mod_clean)
-# }
 
 
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
 ##### MODEL 1: Primary Series, December 2021
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
-mod_p_dec <- MASS::glm.nb(series_complete_18plus ~ social_vulnerability_index + 
+mod_p_dec <- MASS::glm.nb(series_complete_18plus ~ social_vulnerability_index5 + 
                   estimated_hesitant +
                   death_rate_100k +
                   case_rate_100k + 
-                    factor(naat_tertile) +
+                    #factor(naat_tertile) +
                   offset(log(pop_18plus)), 
                 data=df.primary.dec)
     
@@ -58,18 +42,19 @@ mod_clean_p_dec %>%
   gt::gt() %>%
   gt::fmt_number(
     columns = 2:5, 
-    decimals=3
-  )
+    decimals=5
+  ) -> gt_primary_dec
+gt_primary_dec <- gt_primary_dec$`_data`
 
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
 ##### MODEL 2: Booster, December 2021
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
 
-mod_b_dec <- MASS::glm.nb(booster_doses_18plus ~ social_vulnerability_index + 
+mod_b_dec <- MASS::glm.nb(booster_doses_18plus ~ social_vulnerability_index5 + 
                             estimated_hesitant +
                             death_rate_100k +
                             case_rate_100k + 
-                            factor(naat_tertile) +
+                            #factor(naat_tertile) +
                             offset(log(series_complete_18plus)), 
                           data=df.boost.dec)
 
@@ -84,7 +69,9 @@ mod_clean_b_dec %>%
   gt::fmt_number(
     columns = 2:5, 
     decimals=5
-  )
+  )-> gt_boost_dec
+gt_boost_dec <- gt_boost_dec$`_data`
+
 
 
 
@@ -93,7 +80,7 @@ mod_clean_b_dec %>%
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
 ##### MODEL 3: Primary Series, January 2022
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
-mod_p_jan <- MASS::glm.nb(series_complete_18plus ~ social_vulnerability_index + 
+mod_p_jan <- MASS::glm.nb(series_complete_18plus ~ social_vulnerability_index5 + 
                             estimated_hesitant +
                             death_rate_100k +
                             case_rate_100k + 
@@ -120,7 +107,7 @@ gt_primary_jan <- gt_primary_jan$`_data`
 ##### MODEL 4: Booster, January 2022
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
 
-mod_b_jan <- MASS::glm.nb(booster_doses_18plus ~ social_vulnerability_index + 
+mod_b_jan <- MASS::glm.nb(booster_doses_18plus ~ social_vulnerability_index5 + 
                             estimated_hesitant +
                             death_rate_100k +
                             case_rate_100k + 
@@ -140,52 +127,54 @@ mod_clean_b_jan %>%
     columns = 2:5, 
     decimals=5
   ) -> gt_boost_jan
-
 gt_boost_jan <- gt_boost_jan$`_data`
 
+
+
+##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
+##### MODEL - SPATIAL CLUSTERING - JANUARY DATA
+##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
+df.boost.jan$naat_tertile <- factor(df.boost.jan$naat_tertile)
+df.sp.jan <- df.boost.jan[,c("fips", "social_vulnerability_index5", 
+                             "estimated_hesitant", "death_rate_100k", 
+                             "case_rate_100k", "naat_tertile",
+                             "series_complete_18plus", "booster_doses_18plus")]
+
+df.sp.jan$rate <- df.sp.jan$booster_doses_18plus/df.sp.jan$series_complete_18plus *100000
+mod_b_jan2 <- lm(rate ~ social_vulnerability_index5 + 
+                            estimated_hesitant +
+                            death_rate_100k +
+                            case_rate_100k + 
+                            factor(naat_tertile),
+                          data=df.sp.jan)
+library(sf)
+library(sp)
+library(spdep)
+
+# prior to this, you'll have fit a model you can test, which I'll call model below
+# you also need an sf object of your county-level data, which I'll call df_sf below
+counties <- tigris::counties(cb=T)
+df_sf <- merge(counties, df.sp.jan, by.x="GEOID", by.y="fips", all.y=T)
+
+# convert to sp object
+df_sp <- as_Spatial(df_sf)
+
+# calculate spatial weights matrix
+queens <- poly2nb(df_sp, queen = TRUE)
+weights <- nb2listw(queens, style="W", zero.policy = TRUE)
+
+# test residuals
+lm.morantest(mod_b_jan2, weights, alternative="two.sided", zero.policy = TRUE)
+
+# spatial diagnostics
+lm.LMtests(mod_b_jan2, weights, test = "all", zero.policy = TRUE)
+
+#### errors are signiicant so use spatial error model
+
+
+
+
+
+
+
      
-
-############# MERGE JAN TABLES
-fullTable = rbind(gt_primary_jan, gt_boost_jan)
-gtTable = gt(fullTable) %>%
-  tab_row_group(
-    label = md("**Primary Series Uptake**"),
-    rows = 1:6
-  ) %>% 
-  tab_row_group(
-    label = md("**Booster Uptake**"),
-    rows = 7:12
-  )
-
-gtTable %>%
-  fmt_number(
-    columns = 2:5,
-    decimals = 4
-  ) %>%
-  cols_label(
-    term = "Variable",
-    rr = "Rate Ratio",
-    ci.lower = "Lower 95% CI",
-    ci.upper = "Upper 95% CI",
-    p.value = "P-Value"
-    ) %>%
-  tab_header(
-    title = md("Output of Negative Binomial Models")
-    ) %>%
-  tab_footnote(
-    footnote = md("Booster offset is population 18+ fully vaccinated"),
-    cells_row_groups(groups = "**Booster Uptake**")
-  ) %>%
-  tab_footnote(
-    footnote = md("Primary Series offset is USA population 18+"),
-    cells_row_groups(groups = "**Primary Series Uptake**")
-  ) -> out
-
-str(out)
-
-### rename rows
-out$`_data`$term <- c("Social Vulnerability Index", "Estimated Hesitancy (%)", 
-                      "COVID-19 Death Rate/100k", "COVID-19 Case Rate/100k", "NAAT Tertile 2 vs 1", "NAAT Tertile 3 vs 1",
-                      "Social Vulnerability Index", "Estimated Hesitancy (%)", 
-                      "COVID-19 Death Rate/100k", "COVID-19 Case Rate/100k","NAAT Tertile 2 vs 1", "NAAT Tertile 3 vs 1")
-out  
