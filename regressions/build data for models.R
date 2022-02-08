@@ -279,7 +279,7 @@ table(df.sf$state.x)
   df.sf$hhs_region[df.sf$state.x %in% c("Delaware", "District of Columbia", "Maryland", "Pennsylvania", "Virginia", "West Virginia")] <- 3
   df.sf$hhs_region[df.sf$state.x %in% c("Alabamaa", "Florida", "Georgia", "Kentucky", "Mississippi", "North Carolina", "South Carolina", "Tennessee")] <- 4
   df.sf$hhs_region[df.sf$state.x %in% c("Illinois", "Indiana", "Michigan", "Minnesota", "Ohio", "Wisconsin")] <- 5
-  df.sf$hhs_region[df.sf$state.x %in% c("Arkansa", "Louisiana", "New Mexico", "Oklahoma", "Texas")] <- 6
+  df.sf$hhs_region[df.sf$state.x %in% c("Arkansas", "Louisiana", "New Mexico", "Oklahoma", "Texas")] <- 6
   df.sf$hhs_region[df.sf$state.x %in% c("Iowa", "Kansas", "Missouri", "Nebraska")] <- 7
   df.sf$hhs_region[df.sf$state.x %in% c("Colorado", "Montana", "North D", "South D", "Utah", "Wyoming")] <- 8
   df.sf$hhs_region[df.sf$state.x %in% c("Arizona", "California", "Hawaii", "Nevada")] <- 9
