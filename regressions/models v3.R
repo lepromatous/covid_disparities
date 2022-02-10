@@ -24,7 +24,7 @@ df.boost.jan$social_vulnerability_index5 <- df.boost.jan$social_vulnerability_in
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
 ##### MODEL 1: Primary Series, December 2021
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
-mod_p_dec <- MASS::glm.nb(series_complete_18plus ~ social_vulnerability_index5 + 
+mod_p_dec <- MASS::glm.nb(series_complete_18plus ~ social_vulnerability_index + 
                   estimated_hesitant +
                   death_rate_100k +
                   case_rate_100k + 
@@ -50,7 +50,7 @@ gt_primary_dec <- gt_primary_dec$`_data`
 ##### MODEL 2: Booster, December 2021
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
 
-mod_b_dec <- MASS::glm.nb(booster_doses_18plus ~ social_vulnerability_index5 + 
+mod_b_dec <- MASS::glm.nb(booster_doses_18plus ~ social_vulnerability_index + 
                             estimated_hesitant +
                             death_rate_100k +
                             case_rate_100k + 
@@ -80,7 +80,7 @@ gt_boost_dec <- gt_boost_dec$`_data`
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
 ##### MODEL 3: Primary Series, January 2022
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
-mod_p_jan <- MASS::glm.nb(series_complete_18plus ~ social_vulnerability_index5 + 
+mod_p_jan <- MASS::glm.nb(series_complete_18plus ~ social_vulnerability_index + 
                             estimated_hesitant +
                             death_rate_100k +
                             case_rate_100k + 
@@ -107,7 +107,7 @@ gt_primary_jan <- gt_primary_jan$`_data`
 ##### MODEL 4: Booster, January 2022
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
 
-mod_b_jan <- MASS::glm.nb(booster_doses_18plus ~ social_vulnerability_index5 + 
+mod_b_jan <- MASS::glm.nb(booster_doses_18plus ~ social_vulnerability_index + 
                             estimated_hesitant +
                             death_rate_100k +
                             case_rate_100k + 
@@ -131,17 +131,28 @@ gt_boost_jan <- gt_boost_jan$`_data`
 
 
 
+
+
+
+
+
+
+
+
+
+
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
 ##### MODEL - SPATIAL CLUSTERING - JANUARY DATA
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
 df.boost.jan$naat_tertile <- factor(df.boost.jan$naat_tertile)
-df.sp.jan <- df.boost.jan[,c("fips", "social_vulnerability_index5", 
+df.sp.jan <- df.boost.jan[,c("fips", "social_vulnerability_index", 
                              "estimated_hesitant", "death_rate_100k", 
                              "case_rate_100k", "naat_tertile",
-                             "series_complete_18plus", "booster_doses_18plus")]
+                             "series_complete_18plus", "booster_doses_18plus", "svi_tert")]
 
+### need to create rate for outcome b/c ount outcomes in lag models dont work
 df.sp.jan$rate <- df.sp.jan$booster_doses_18plus/df.sp.jan$series_complete_18plus *100000
-mod_b_jan2 <- lm(rate ~ social_vulnerability_index5 + 
+mod_b_jan2 <- lm(rate ~ social_vulnerability_index + 
                             estimated_hesitant +
                             death_rate_100k +
                             case_rate_100k + 
@@ -169,11 +180,28 @@ lm.morantest(mod_b_jan2, weights, alternative="two.sided", zero.policy = TRUE)
 # spatial diagnostics
 lm.LMtests(mod_b_jan2, weights, test = "all", zero.policy = TRUE)
 
-#### errors are signiicant so use spatial error model
+### everythign is significant so fit lag and error models
 
+library(spatialreg)
+out.lag <- spatialreg::lagsarlm(rate ~ factor(svi_tert) + 
+                                  estimated_hesitant +
+                                  death_rate_100k +
+                                  case_rate_100k + 
+                                  factor(naat_tertile),
+                                data=df_sp@data,
+                                list = weights,
+                                zero.policy = T)
+out.error <- spatialreg::errorsarlm(rate ~ factor(svi_tert) + 
+                                  estimated_hesitant +
+                                  death_rate_100k +
+                                  case_rate_100k + 
+                                  factor(naat_tertile),
+                                data=df_sp@data,
+                                list = weights, 
+                                zero.policy=T)
 
-
-
+summary(out.lag)
+summary(out.error)
 
 
 

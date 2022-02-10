@@ -29,7 +29,7 @@ getdata <- function(datezz="2022-01-18", num.var, denom.var){
                 # "pct_ss", "pct_ssi", "pct_tanf", "pct_snap", "pct_public_health", 
                # "pct_no_health", 
                 "naat_tertile", "hhs_region", "rpl_theme1", "rpl_theme2",
-                "rpl_theme3", "rpl_theme4"
+                "rpl_theme3", "rpl_theme4","svi_tert"
                  )]
   
   df <- data.frame(outs, ivs)
@@ -70,7 +70,7 @@ getdata <- function(datezz="2022-01-18", num.var, denom.var){
               # "pct_no_health", 
               "case_rate_100k", "death_rate_100k", "naat_tertile", "hhs_region",
               "rpl_theme1", "rpl_theme2",
-              "rpl_theme3", "rpl_theme4")]
+              "rpl_theme3", "rpl_theme4", "svi_tert")]
   
   
   

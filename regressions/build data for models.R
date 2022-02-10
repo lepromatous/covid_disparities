@@ -310,6 +310,16 @@ table(df.sf$state.x)
                              include.lowest = T, 
                              labels = c("Low", "Medium", "High")))
   
+  ### svi tert
+  df.sf$social_vulnerability_index <- as.numeric(as.character(df.sf$social_vulnerability_index))
+  vTert = quantile(df.sf$social_vulnerability_index, c(0:3/3), na.rm=T)
+  
+  # classify values
+  df.sf$svi_tert = with(df.sf, 
+                            cut(social_vulnerability_index, 
+                                vTert, 
+                                include.lowest = T, 
+                                labels = c("Low", "Medium", "High")))
   
   
   
