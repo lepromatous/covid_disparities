@@ -4,6 +4,8 @@ library(tidyverse)
 
 
 setwd("/Users/timothywiemken/Library/CloudStorage/OneDrive-Pfizer/Documents/Research/github/COVID disparities/covid_disparities/main data/")
+df.primary.jun <- vroom::vroom("primary18_jun25.csv")
+df.primary.jan$social_vulnerability_index5 <- df.primary.jan$social_vulnerability_index/5
 df.primary.dec <- vroom::vroom("primary18_dec25.csv")
 df.primary.dec$social_vulnerability_index5 <- df.primary.dec$social_vulnerability_index/5
 df.primary.jan <- vroom::vroom("primary18_jan25.csv")
@@ -15,6 +17,32 @@ df.boost.jan$social_vulnerability_index5 <- df.boost.jan$social_vulnerability_in
 
 
 
+##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
+##### MODEL 1: Primary Series, June 2021
+##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
+mod_p_jun <- MASS::glm.nb(series_complete_18plus ~ social_vulnerability_index + 
+                            estimated_hesitant +
+                            death_rate_100k +
+                            case_rate_100k + 
+                            #factor(naat_tertile) +
+                            offset(log(pop_18plus)), 
+                          data=df.primary.jun)
+
+mod_clean_p_jun <- broom::tidy(mod_p_jun)
+mod_clean_p_jun$rr <- round(exp(mod_clean_p_jun$estimate),2)
+ci_p_jun <- exp(confint(mod_p_jun))
+mod_clean_p_jun$ci.lower <- ci_p_jun[,1]
+mod_clean_p_jun$ci.upper <- ci_p_jun[,2]
+mod_clean_p_jun <- mod_clean_p_jun[-1,c(1,6,7,8,5)]
+mod_clean_p_jun %>%
+  gt::gt() %>%
+  gt::fmt_number(
+    columns = 2:5, 
+    decimals=5
+  ) -> gt_primary_jun
+gt_primary_jun <- gt_primary_jun$`_data`
+
+
 
 
 
@@ -22,7 +50,7 @@ df.boost.jan$social_vulnerability_index5 <- df.boost.jan$social_vulnerability_in
 
 
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
-##### MODEL 1: Primary Series, December 2021
+##### MODEL 2: Primary Series, December 2021
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
 mod_p_dec <- MASS::glm.nb(series_complete_18plus ~ social_vulnerability_index + 
                   estimated_hesitant +
@@ -47,7 +75,7 @@ mod_clean_p_dec %>%
 gt_primary_dec <- gt_primary_dec$`_data`
 
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
-##### MODEL 2: Booster, December 2021
+##### MODEL 3: Booster, December 2021
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
 
 mod_b_dec <- MASS::glm.nb(booster_doses_18plus ~ social_vulnerability_index + 
@@ -78,7 +106,7 @@ gt_boost_dec <- gt_boost_dec$`_data`
 
 
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
-##### MODEL 3: Primary Series, January 2022
+##### MODEL 4: Primary Series, January 2022
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
 mod_p_jan <- MASS::glm.nb(series_complete_18plus ~ social_vulnerability_index + 
                             estimated_hesitant +
@@ -104,7 +132,7 @@ gt_primary_jan <- gt_primary_jan$`_data`
 
 
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
-##### MODEL 4: Booster, January 2022
+##### MODEL 5: Booster, January 2022
 ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
 
 mod_b_jan <- MASS::glm.nb(booster_doses_18plus ~ social_vulnerability_index + 
@@ -202,6 +230,21 @@ out.error <- spatialreg::errorsarlm(rate ~ factor(svi_tert) +
 
 summary(out.lag)
 summary(out.error)
+
+
+
+
+
+### dec 11, 2020: initial authorization
+### nov 19 2021 booster authorization: https://www.fda.gov/news-events/press-announcements/coronavirus-covid-19-update-fda-expands-eligibility-covid-19-vaccine-boosters
+
+
+
+biscale::bi_class(data=df, x=social_vulnerability_index, y=)
+
+
+
+
 
 
 

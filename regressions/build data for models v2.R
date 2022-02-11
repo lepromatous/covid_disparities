@@ -9,7 +9,7 @@
 getdata <- function(datezz="2022-01-18", num.var, denom.var){
   source("/Users/timothywiemken/OneDrive - Pfizer/Documents/Research/github/COVID disparities/covid_disparities/regressions/build data for models.R")
   df2 <- yo(datez=datezz)
-
+#df2 <- df.sf
   outs <- df2[,c("fips","series_complete_yes", "series_complete_5plus", "series_complete_12plus", "series_complete_18plus", 
                  "series_complete_65plus", "booster_doses", "booster_doses_18plus",
                  "booster_doses_50plus", "booster_doses_65plus",
@@ -47,7 +47,7 @@ getdata <- function(datezz="2022-01-18", num.var, denom.var){
     mutate(across(c(2:10), as.factor)) %>%
     #drop_na() %>%
     filter(
-      booster_doses_18plus !=0,
+      booster_doses_18plus !=0,  ### remove this line for june 2021 data
       series_complete_18plus !=0
     ) -> df
   
@@ -90,4 +90,10 @@ write.csv(df.primary.dec, "~/Desktop/primary18_dec25.csv", row.names=F, na="")
 
 df.primary.jan <- getdata(datezz = "2022-01-25", num.var = "series_complete_18plus", denom.var = "pop_18plus")
 write.csv(df.primary.jan, "~/Desktop/primary18_jan25.csv", row.names=F, na="")
+
+
+
+# df.primary.jun <- getdata(datezz = "2021-06-25", num.var = "series_complete_18plus", denom.var = "pop_18plus")
+# write.csv(df, "~/Desktop/primary18_jun25.csv", row.names=F, na="")
+
 

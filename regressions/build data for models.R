@@ -41,7 +41,7 @@ pull(read.socrata(
 # ==============================================================================
 yo <- function(datez=Sys.Date()-1,complete.sub = 90){
 
-  
+  #datez="2021-06-25"
   #=======================================================================
   # COVID hesitancy data: https://data.cdc.gov/Vaccinations/Vaccine-Hesitancy-for-COVID-19-County-and-local-es/q9mh-h2tw
   #=======================================================================
@@ -337,5 +337,4 @@ table(df.sf$state.x)
 # Example Run
 # =======================================================================
 #f <- yo(datez="2022-01-08")
-
 
