@@ -39,7 +39,8 @@ pull(read.socrata(
 # FUNCTION to be able to subset date easily. 
 # ==============================================================================
 # ==============================================================================
-yo <- function(datez=Sys.Date()-1,complete.sub = 90){
+datez=Sys.Date()-1
+complete.sub = 90
 
   #datez="2021-06-25"
   #=======================================================================
@@ -76,10 +77,10 @@ covid2 <- covid2[,-c(47:51)]
   
   
   # merge these two COVID sets (old and new) and do some cleaning. 
-  covid3 <- rbind(covid, covid2)
-  covid <- subset(covid3, covid3$date == datez)
+  covid <- rbind(covid, covid2)
+  #covid <- subset(covid3, covid3$date == datez)
   rm(covid2)
-  rm(covid3)
+  #rm(covid3)
   
 
   
@@ -342,12 +343,33 @@ read_feather("county_pop_age.feather") %>%
     # =======================================================================
   # END
   # =======================================================================
-  return(df.sf) 
-}
+  df <- df.sf
+  sf::st_geometry(df) <- NULL
+  df <- df[,!names(df)%in% "geometry"]
+  df <- df[,!names(df)%in% "geometry.1"]
+  
+  df$social_vulnerability_index5 <- df$social_vulnerability_index/5
+  df$social_vulnerability_index10 <- df$social_vulnerability_index/10
+  
+  df$svi_quant <- ifelse(df$social_vulnerability_index<25,1,
+                         ifelse(df$social_vulnerability_index>=25 & df$social_vulnerability_index<50,2,
+                                ifelse(df$social_vulnerability_index>=50 & df$social_vulnerability_index<75,3,4)))
+  
+  df %>%
+    filter(date.x =="2021-12-25") ->  df.dec 
+  df %>%
+    filter(date.x =="2022-01-25") ->  df.jan
+  df %>%
+    filter(date.x =="2021-06-25") ->  df.jun
+  
+  library(feather) 
+  write_feather(df.dec, "/Users/timothywiemken/Library/CloudStorage/OneDrive-Pfizer/Documents/Research/github/COVID disparities/covid_disparities/main data/dec.feather")
+  write_feather(df.jan, "/Users/timothywiemken/Library/CloudStorage/OneDrive-Pfizer/Documents/Research/github/COVID disparities/covid_disparities/main data/jan.feather")
+  write_feather(df.jun, "/Users/timothywiemken/Library/CloudStorage/OneDrive-Pfizer/Documents/Research/github/COVID disparities/covid_disparities/main data/jun.feather")
+  
 
 
-
-
+names(df)
 # =======================================================================
 # Example Run
 # =======================================================================

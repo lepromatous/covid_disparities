@@ -4,16 +4,14 @@ library(tidyverse)
 
 
 setwd("/Users/timothywiemken/Library/CloudStorage/OneDrive-Pfizer/Documents/Research/github/COVID disparities/covid_disparities/main data/")
-df.primary.jun <- vroom::vroom("primary18_jun25.csv")
-df.primary.jan$social_vulnerability_index5 <- df.primary.jan$social_vulnerability_index/5
-df.primary.dec <- vroom::vroom("primary18_dec25.csv")
-df.primary.dec$social_vulnerability_index5 <- df.primary.dec$social_vulnerability_index/5
-df.primary.jan <- vroom::vroom("primary18_jan25.csv")
-df.primary.jan$social_vulnerability_index5 <- df.primary.jan$social_vulnerability_index/5
-df.boost.dec <- vroom::vroom("boost18_dec25.csv")
-df.boost.dec$social_vulnerability_index5 <- df.boost.dec$social_vulnerability_index/5
-df.boost.jan <- vroom::vroom("boost18_jan25.csv")
-df.boost.jan$social_vulnerability_index5 <- df.boost.jan$social_vulnerability_index/5
+
+
+
+df.jun <- read_feather("jun.feather")
+
+df.dec <- read_feather("dec.feather")
+
+df.jan <- read_feather("jan.feather")
 
 
 
@@ -23,7 +21,7 @@ df.boost.jan$social_vulnerability_index5 <- df.boost.jan$social_vulnerability_in
 mod_p_jun <- MASS::glm.nb(series_complete_18plus ~ social_vulnerability_index + 
                             estimated_hesitant +
                             death_rate_100k +
-                            case_rate_100k + 
+                            case_rate_100k + ncpd + 
                             #factor(naat_tertile) +
                             offset(log(pop_18plus)), 
                           data=df.primary.jun)
