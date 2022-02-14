@@ -137,15 +137,101 @@ df.jan <- merge(df.jan, nyt.jan, by="fips", all.x=T)
 df.jun$census2019_18pluspop <- as.numeric(df.jun$census2019_18pluspop)
 df.dec$census2019_18pluspop <- as.numeric(df.dec$census2019_18pluspop)
 df.jan$census2019_18pluspop <- as.numeric(df.jan$census2019_18pluspop)
-df.jun$estimated_hesitant <- as.numeric(df.jun$estimated_hesitant)
-df.dec$estimated_hesitant <- as.numeric(df.dec$estimated_hesitant)
-df.jan$estimated_hesitant <- as.numeric(df.jan$estimated_hesitant)
+
+df.jun$series_complete_18plus <- as.numeric(df.jun$series_complete_18plus)
+df.dec$series_complete_18plus <- as.numeric(df.dec$series_complete_18plus)
+df.jan$series_complete_18plus <- as.numeric(df.jan$series_complete_18plus)
+
+#df.jun$booster_doses_18plus <- as.numeric(df.jun$booster_doses_18plus)
+df.dec$booster_doses_18plus <- as.numeric(df.dec$booster_doses_18plus)
+df.jan$booster_doses_18plus <- as.numeric(df.jan$booster_doses_18plus)
+
+df.jun$estimated_hesitant5 <- (as.numeric(df.jun$estimated_hesitant)*100)/5
+df.dec$estimated_hesitant5 <- (as.numeric(df.dec$estimated_hesitant)*100)/5
+df.jan$estimated_hesitant5 <- (as.numeric(df.jan$estimated_hesitant)*100)/5
+
+df.jun$case_rate1000 <- as.numeric(df.jun$case_rate)/1000
+df.dec$case_rate1000 <- as.numeric(df.dec$case_rate)/1000
+df.jan$case_rate1000 <- as.numeric(df.jan$case_rate)/1000
+
+df.jun$death_rate10 <- as.numeric(df.jun$death_rate)/10
+df.dec$death_rate10 <- as.numeric(df.dec$death_rate)/10
+df.jan$death_rate10 <- as.numeric(df.jan$death_rate)/10
+
+
+df.jun$pharm_rate <- as.numeric(df.jun$pharm_count)/df.jun$census2019_18pluspop*1000
+df.dec$pharm_rate <- as.numeric(df.dec$pharm_count)/df.dec$census2019_18pluspop*1000
+df.jan$pharm_rate <- as.numeric(df.jan$pharm_count)/df.jan$census2019_18pluspop*1000
+
+df.jun <- subset(df.jun, as.numeric(df.jun$completeness_pct)>=90)
+df.dec <- subset(df.dec, as.numeric(df.dec$completeness_pct)>=90)
+df.jan <- subset(df.jan, as.numeric(df.jan$completeness_pct)>=90)
+
+
+
+
+
+################################################################################
+################################################################################
+### Primay series MODELS
+################################################################################
+################################################################################
+### jun
+
+mod_p_jun<-MASS::glm.nb(series_complete_18plus ~ factor(svi_quant) + 
+                          estimated_hesitant5 +
+                          death_rate10 +
+                          case_rate1000 + pharm_rate +  offset(log(census2019_18pluspop)), 
+                        data=df.jun)
+
+mod_clean_p_jun <- broom::tidy(mod_p_jun)
+mod_clean_p_jun$rr <- round(exp(mod_clean_p_jun$estimate),2)
+ci_p_jun <- exp(confint(mod_p_jun))
+mod_clean_p_jun$ci.lower <- ci_p_jun[,1]
+mod_clean_p_jun$ci.upper <- ci_p_jun[,2]
+mod_clean_p_jun <- mod_clean_p_jun[-1,c(1,6,7,8,5)]
+mod_clean_p_jun %>%
+  gt::gt() %>%
+  gt::fmt_number(
+    columns = 2:5, 
+    decimals =5
+  ) -> gt_primary_jun
+gt_primary_jun <- gt_primary_jun$`_data`
+gt_primary_jun
+
+
+### dec
+
+
+mod_p_dec<-MASS::glm.nb(series_complete_18plus ~ factor(svi_quant) + 
+                          estimated_hesitant5 +
+                          death_rate10 +
+                          case_rate1000 + pharm_rate +  timeperiod + offset(log(census2019_18pluspop)), 
+                        data=df.dec)
+
+mod_clean_p_dec <- broom::tidy(mod_p_dec)
+mod_clean_p_dec$rr <- round(exp(mod_clean_p_dec$estimate),2)
+ci_p_dec <- exp(confint(mod_p_dec))
+mod_clean_p_dec$ci.lower <- ci_p_dec[,1]
+mod_clean_p_dec$ci.upper <- ci_p_dec[,2]
+mod_clean_p_dec <- mod_clean_p_dec[-1,c(1,6,7,8,5)]
+mod_clean_p_dec %>%
+  gt::gt() %>%
+  gt::fmt_number(
+    columns = 2:5, 
+    decimals =5
+  ) -> gt_primary_dec
+gt_primary_dec <- gt_primary_dec$`_data`
+gt_primary_dec
+
+
+### jan
 
 
 mod_p_jan<-MASS::glm.nb(series_complete_18plus ~ factor(svi_quant) + 
-               estimated_hesitant +
-               death_rate +
-               case_rate + pharm_count +  offset(log(census2019_18pluspop)), 
+               estimated_hesitant5 +
+               death_rate10 +
+               case_rate1000 + pharm_rate +  offset(log(census2019_18pluspop)), 
              data=df.jan)
 
 mod_clean_p_jan <- broom::tidy(mod_p_jan)
@@ -161,9 +247,65 @@ mod_clean_p_jan %>%
     decimals =5
   ) -> gt_primary_jan
 gt_primary_jan <- gt_primary_jan$`_data`
+gt_primary_jan
+               
+               
 
-               
-               
-               
+
+################################################################################
+################################################################################
+### BOOSTER MODELS
+################################################################################
+################################################################################
+### MUST REMOVE ZEROS FROM DENOM
+df.dec_boost <- subset(df.dec, df.dec$series_complete_18plus!=0)
+df.jan_boost <- subset(df.jan, df.jan$series_complete_18plus!=0)
+
+
+
+mod_b_dec<-MASS::glm.nb(booster_doses_18plus ~ factor(svi_quant) + 
+                          estimated_hesitant5 +
+                          death_rate10 +
+                          case_rate1000 + pharm_rate +  offset(log(series_complete_18plus)), 
+                        data=df.dec_boost)
+
+mod_clean_p_dec <- broom::tidy(mod_b_dec)
+mod_clean_p_dec$rr <- round(exp(mod_clean_p_dec$estimate),2)
+ci_p_dec <- exp(confint(mod_b_dec))
+mod_clean_p_dec$ci.lower <- ci_p_dec[,1]
+mod_clean_p_dec$ci.upper <- ci_p_dec[,2]
+mod_clean_p_dec <- mod_clean_p_dec[-1,c(1,6,7,8,5)]
+mod_clean_p_dec %>%
+  gt::gt() %>%
+  gt::fmt_number(
+    columns = 2:5, 
+    decimals =5
+  ) -> gt_boost_dec
+gt_boost_dec <- gt_boost_dec$`_data`
+gt_boost_dec
+
+
+#### JAN BOOSTER
+
+mod_b_jan<-MASS::glm.nb(booster_doses_18plus ~ factor(svi_quant) + 
+                          estimated_hesitant5 +
+                          death_rate10 +
+                          case_rate1000 + pharm_rate +  offset(log(series_complete_18plus)), 
+                        data=df.jan_boost)
+
+mod_clean_p_jan <- broom::tidy(mod_b_jan)
+mod_clean_p_jan$rr <- round(exp(mod_clean_p_jan$estimate),2)
+ci_p_jan <- exp(confint(mod_b_jan))
+mod_clean_p_jan$ci.lower <- ci_p_jan[,1]
+mod_clean_p_jan$ci.upper <- ci_p_jan[,2]
+mod_clean_p_jan <- mod_clean_p_jan[-1,c(1,6,7,8,5)]
+mod_clean_p_jan %>%
+  gt::gt() %>%
+  gt::fmt_number(
+    columns = 2:5, 
+    decimals =5
+  ) -> gt_boost_jan
+gt_boost_jan <- gt_boost_jan$`_data`
+gt_boost_jan
                
                
