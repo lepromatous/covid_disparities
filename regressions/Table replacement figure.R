@@ -41,7 +41,7 @@
 # write.table(test[grep(".upper", test$month),], "~/Desktop/file.csv", sep=",", row.names=F)
 
 
-df <- readxl::read_excel("~/Desktop/data_nbplot.xlsx")
+df <- readxl::read_excel("/Users/timothywiemken/Library/CloudStorage/OneDrive-Pfizer/Documents/Research/github/COVID disparities/extra data/data_nbplot.xlsx")
 df$yearmon <- factor(as.yearmon(df$yearmon))
 df$vax.factor <- factor(df$vax, levels=c(0,1), labels=c("Primary Series", "Booster"))
 df$svi <- factor(df$svi, levels=c(2,3,4), labels=c("Quartile 2", "Quartile 3", "Quartile 4"))
