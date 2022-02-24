@@ -40,7 +40,6 @@
 #   pivot_longer(., cols=c(2:22), names_to = "month") -> test
 # write.table(test[grep(".upper", test$month),], "~/Desktop/file.csv", sep=",", row.names=F)
 
-
 df <- readxl::read_excel("/Users/timothywiemken/Library/CloudStorage/OneDrive-Pfizer/Documents/Research/github/COVID disparities/extra data/data_nbplot.xlsx")
 df$yearmon <- factor(as.yearmon(df$yearmon))
 df$vax.factor <- factor(df$vax, levels=c(0,1), labels=c("Primary Series", "Booster"))
