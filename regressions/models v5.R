@@ -1,6 +1,7 @@
 library(tidyverse)
 library(arrow)
 library(feather)
+library(Hmisc)
 #https://www.countyhealthrankings.org/explore-health-rankings/rankings-data-documentation
 
 setwd("/Users/timothywiemken/OneDrive - Pfizer/Documents/Research/github/COVID disparities/extra data")
@@ -109,85 +110,88 @@ df.post$series_complete_18plus[df.post$series_complete_18plus<0] <-0
 
 df.all <- subset(df, df$date=="2022-02-22")
 
-################################################################################
-################################################################################
-### Primary series MODELS
-################################################################################
-################################################################################
-### pre
-library(rms)
-mod_p<-MASS::glm.nb(series_complete_18plus ~ factor(svi_quant) + 
-                         pharm_rate +  pcp_rate + pharm_rate*pcp_rate + 
-                      offset(log(census2019_18pluspop)), 
-                        data=df.pre)
+df.all$state_fips <- substr(df.all$fips, start=1, stop=2)
+df.all <- subset(df.all, df.all$state_fips%nin%c(60,66,69,72,78))
 
-mod_p_clean <- broom::tidy(mod_p)
-mod_p_clean$rr <- round(exp(mod_p_clean$estimate),2)
-ci_p <- exp(confint(mod_p))
-mod_p_clean$ci.lower <- ci_p[,1]
-mod_p_clean$ci.upper <- ci_p[,2]
-mod_p_clean <- mod_p_clean[-1,c(1,6,7,8,5)]
-mod_p_clean %>%
-  gt::gt() %>%
-  gt::fmt_number(
-    columns = 2:5, 
-    decimals =5
-  ) -> pre_primary
-pre_primary
-
-
-
-
-### POST
-mod_p<-MASS::glm.nb(series_complete_18plus ~ factor(svi_quant) + 
-                      pharm_rate +  pcp_rate +  pharm_rate*pcp_rate + 
-                      offset(log(census2019_18pluspop)), 
-                    data=df.post)
-
-mod_p_clean <- broom::tidy(mod_p)
-mod_p_clean$rr <- round(exp(mod_p_clean$estimate),2)
-ci_p <- exp(confint(mod_p))
-mod_p_clean$ci.lower <- ci_p[,1]
-mod_p_clean$ci.upper <- ci_p[,2]
-mod_p_clean <- mod_p_clean[-1,c(1,6,7,8,5)]
-mod_p_clean %>%
-  gt::gt() %>%
-  gt::fmt_number(
-    columns = 2:5, 
-    decimals =5
-  ) -> post_primary
-post_primary          
-               
-
-################################################################################
-################################################################################
-### BOOSTER MODELS
-################################################################################
-################################################################################
-#### post BOOSTER
-df.post <- subset(df.post, !is.na(df.post$booster_doses_18plus))
-df.post <- subset(df.post, df.post$series_complete_18plus!=0)
-df.post$int <- df.post$pharm_rate*df.post$pcp_rate
-
-## must remove one outlier for model to run.
-mod_b<-MASS::glm.nb(booster_doses_18plus ~ factor(svi_quant) + 
-                      pharm_rate +  pcp_rate  + int + 
-                      offset(log(series_complete_18plus)),
-                        data=df.post[df.post$int<500,])
-
-mod_b_clean <- broom::tidy(mod_b)
-mod_b_clean$rr <- round(exp(mod_b_clean$estimate),2)
-ci_b <- exp(confint(mod_b))
-mod_b_clean$ci.lower <- ci_b[,1]
-mod_b_clean$ci.upper <- ci_b[,2]
-mod_b_clean <- mod_b_clean[-1,c(1,6,7,8,5)]
-mod_b_clean %>%
-  gt::gt() %>%
-  gt::fmt_number(
-    columns = 2:5, 
-    decimals =5
-  ) -> post_boost
-post_boost
+# ################################################################################
+# ################################################################################
+# ### Primary series MODELS
+# ################################################################################
+# ################################################################################
+# ### pre
+# library(rms)
+# mod_p<-MASS::glm.nb(series_complete_18plus ~ factor(svi_quant) + 
+#                          pharm_rate +  pcp_rate + pharm_rate*pcp_rate + 
+#                       offset(log(census2019_18pluspop)), 
+#                         data=df.pre)
+# 
+# mod_p_clean <- broom::tidy(mod_p)
+# mod_p_clean$rr <- round(exp(mod_p_clean$estimate),2)
+# ci_p <- exp(confint(mod_p))
+# mod_p_clean$ci.lower <- ci_p[,1]
+# mod_p_clean$ci.upper <- ci_p[,2]
+# mod_p_clean <- mod_p_clean[-1,c(1,6,7,8,5)]
+# mod_p_clean %>%
+#   gt::gt() %>%
+#   gt::fmt_number(
+#     columns = 2:5, 
+#     decimals =5
+#   ) -> pre_primary
+# pre_primary
+# 
+# 
+# 
+# 
+# ### POST
+# mod_p<-MASS::glm.nb(series_complete_18plus ~ factor(svi_quant) + 
+#                       pharm_rate +  pcp_rate +  pharm_rate*pcp_rate + 
+#                       offset(log(census2019_18pluspop)), 
+#                     data=df.post)
+# 
+# mod_p_clean <- broom::tidy(mod_p)
+# mod_p_clean$rr <- round(exp(mod_p_clean$estimate),2)
+# ci_p <- exp(confint(mod_p))
+# mod_p_clean$ci.lower <- ci_p[,1]
+# mod_p_clean$ci.upper <- ci_p[,2]
+# mod_p_clean <- mod_p_clean[-1,c(1,6,7,8,5)]
+# mod_p_clean %>%
+#   gt::gt() %>%
+#   gt::fmt_number(
+#     columns = 2:5, 
+#     decimals =5
+#   ) -> post_primary
+# post_primary          
+#                
+# 
+# ################################################################################
+# ################################################################################
+# ### BOOSTER MODELS
+# ################################################################################
+# ################################################################################
+# #### post BOOSTER
+# df.post <- subset(df.post, !is.na(df.post$booster_doses_18plus))
+# df.post <- subset(df.post, df.post$series_complete_18plus!=0)
+# df.post$int <- df.post$pharm_rate*df.post$pcp_rate
+# 
+# ## must remove one outlier for model to run.
+# mod_b<-MASS::glm.nb(booster_doses_18plus ~ factor(svi_quant) + 
+#                       pharm_rate +  pcp_rate  + int + 
+#                       offset(log(series_complete_18plus)),
+#                         data=df.post[df.post$int<500,])
+# 
+# mod_b_clean <- broom::tidy(mod_b)
+# mod_b_clean$rr <- round(exp(mod_b_clean$estimate),2)
+# ci_b <- exp(confint(mod_b))
+# mod_b_clean$ci.lower <- ci_b[,1]
+# mod_b_clean$ci.upper <- ci_b[,2]
+# mod_b_clean <- mod_b_clean[-1,c(1,6,7,8,5)]
+# mod_b_clean %>%
+#   gt::gt() %>%
+#   gt::fmt_number(
+#     columns = 2:5, 
+#     decimals =5
+#   ) -> post_boost
+# post_boost
 
 
 
@@ -259,10 +263,8 @@ library(spdep)
 counties <- tigris::counties(cb=T)
 
 #### make DF.  change df. jan to whatever.  remove unknown fips
-df_sf <- merge(counties, df.jan, by.x="GEOID", by.y="fips", all.y=T)
-df_sf <- subset(df_sf,df_sf$GEOID!="00UNK")
+df_sf <- merge(counties, df.all, by.x="GEOID", by.y="fips", all.y=T)
 df_sf$rate <- df_sf$booster_doses_18plus/df_sf$series_complete_18plus *100000
-
 
 # convert to sp object
 df_sp <- as_Spatial(df_sf)
@@ -272,10 +274,10 @@ queens <- poly2nb(df_sp, queen = TRUE)
 weights <- nb2listw(queens, style="W", zero.policy = TRUE)
 
 # test residuals
-lm.morantest(mod_p_jan, weights, alternative="two.sided", zero.policy = TRUE)
+lm.morantest(mod_p, weights, alternative="two.sided", zero.policy = TRUE)
 
 # spatial diagnostics
-lm.LMtests(mod_p_jan, weights, test = "all", zero.policy = TRUE)
+lm.LMtests(mod_p, weights, test = "all", zero.policy = TRUE)
 
 ### ?everything is significant so fit lag and error models
 #rm(list=ls()[! ls() %in% c("df_sp","weights")])
@@ -283,10 +285,7 @@ lm.LMtests(mod_p_jan, weights, test = "all", zero.policy = TRUE)
 
 library(spatialreg)
 out.lag <- spatialreg::lagsarlm(rate ~ factor(svi_quant) + 
-                                  estimated_hesitant5 +
-                                  death_rate10 +
-                                  case_rate1000 +
-                                  pharm_rate,
+                                  pharm_rate +  pcp_rate + pharm_rate*pcp_rate,
                                 data=df_sp@data,
                                 list = weights,
                                 zero.policy = T)
@@ -305,5 +304,4 @@ summary(out.lag)
 summary(out.error)
 
 
-               
-               
+table(df.all$state_fips)
