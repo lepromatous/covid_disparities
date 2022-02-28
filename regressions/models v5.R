@@ -81,7 +81,6 @@ df <- merge(df, chr, by="fips", all.x=T)
 
 
 
-
 df$census2019_18pluspop <- as.numeric(df$census2019_18pluspop)
 
 df$series_complete_18plus <- as.numeric(df$series_complete_18plus)
@@ -92,7 +91,7 @@ df$pharm_rate <- (as.numeric(df$pharm_count)/df$census2019_18pluspop*100000)/10
 ### rate per 100k
 df$pcp_rate <- df$pcp_rate/10
 
-df <- subset(df, as.numeric(df$completeness_pct)>=90)
+df <- subset(df, as.numeric(df$completeness_pct)>=80)
 
 df$primary_rate <- df$series_complete_18plus/df$census2019_18pluspop *100000
 df$booster_rate <- df$booster_doses_18plus/df$series_complete_18plus *100000
@@ -108,7 +107,7 @@ df.post$series_complete_18plus <- df.post$series_complete_18pluspost-df.post$ser
 df.post <- df.post[,names(df.post)%nin%c("series_complete_18pluspost", "series_complete_18pluspre")]
 df.post$series_complete_18plus[df.post$series_complete_18plus<0] <-0
 
-
+df.all <- subset(df, df$date=="2022-02-22")
 
 ################################################################################
 ################################################################################
@@ -118,7 +117,7 @@ df.post$series_complete_18plus[df.post$series_complete_18plus<0] <-0
 ### pre
 library(rms)
 mod_p<-MASS::glm.nb(series_complete_18plus ~ factor(svi_quant) + 
-                         pharm_rate +  pcp_rate + 
+                         pharm_rate +  pcp_rate + pharm_rate*pcp_rate + 
                       offset(log(census2019_18pluspop)), 
                         data=df.pre)
 
@@ -141,7 +140,7 @@ pre_primary
 
 ### POST
 mod_p<-MASS::glm.nb(series_complete_18plus ~ factor(svi_quant) + 
-                      rcs(pharm_rate) +  rcs(pcp_rate) +  
+                      pharm_rate +  pcp_rate +  pharm_rate*pcp_rate + 
                       offset(log(census2019_18pluspop)), 
                     data=df.post)
 
@@ -160,7 +159,6 @@ mod_p_clean %>%
 post_primary          
                
 
-
 ################################################################################
 ################################################################################
 ### BOOSTER MODELS
@@ -169,11 +167,13 @@ post_primary
 #### post BOOSTER
 df.post <- subset(df.post, !is.na(df.post$booster_doses_18plus))
 df.post <- subset(df.post, df.post$series_complete_18plus!=0)
+df.post$int <- df.post$pharm_rate*df.post$pcp_rate
 
+## must remove one outlier for model to run.
 mod_b<-MASS::glm.nb(booster_doses_18plus ~ factor(svi_quant) + 
-                      rcs(pharm_rate) +  rcs(pcp_rate) + 
-                      offset(log(series_complete_18plus)), 
-                        data=df.post)
+                      pharm_rate +  pcp_rate  + int + 
+                      offset(log(series_complete_18plus)),
+                        data=df.post[df.post$int<500,])
 
 mod_b_clean <- broom::tidy(mod_b)
 mod_b_clean$rr <- round(exp(mod_b_clean$estimate),2)
@@ -193,12 +193,57 @@ post_boost
 
 
 
+#############################################################################
+#############################################################################
+#############################################################################
+### all time - end feb 1 primary series
+library(rms)
+mod_p<-MASS::glm.nb(series_complete_18plus ~ factor(svi_quant) + 
+                      pharm_rate +  pcp_rate + pharm_rate*pcp_rate + 
+                      offset(log(census2019_18pluspop)), 
+                    data=df.all)
+
+mod_p_clean <- broom::tidy(mod_p)
+mod_p_clean$rr <- round(exp(mod_p_clean$estimate),2)
+ci_p <- exp(confint(mod_p))
+mod_p_clean$ci.lower <- ci_p[,1]
+mod_p_clean$ci.upper <- ci_p[,2]
+mod_p_clean <- mod_p_clean[-1,c(1,6,7,8,5)]
+mod_p_clean %>%
+  gt::gt() %>%
+  gt::fmt_number(
+    columns = 2:5, 
+    decimals =5
+  ) -> pre_primary
+pre_primary
 
 
 
+###### booster
+#### post BOOSTER
+df.all <- subset(df.all, !is.na(df.all$booster_doses_18plus))
+df.all <- subset(df.all, df.all$series_complete_18plus!=0)
+df.all$int <- df.all$pharm_rate*df.all$pcp_rate
 
+## must remove one outlier for model to run.
+mod_b<-MASS::glm.nb(booster_doses_18plus ~ factor(svi_quant) + 
+                      pharm_rate +  pcp_rate  + int + 
+                      offset(log(series_complete_18plus)),
+                    data=df.all[df.all$int<500,])
 
-
+mod_b_clean <- broom::tidy(mod_b)
+mod_b_clean$rr <- round(exp(mod_b_clean$estimate),2)
+ci_b <- exp(confint(mod_b))
+mod_b_clean$ci.lower <- ci_b[,1]
+mod_b_clean$ci.upper <- ci_b[,2]
+mod_b_clean <- mod_b_clean[-1,c(1,6,7,8,5)]
+mod_b_clean %>%
+  gt::gt() %>%
+  gt::fmt_number(
+    columns = 2:5, 
+    decimals =5
+  ) -> post_boost
+post_boost
 
 
 
