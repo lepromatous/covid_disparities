@@ -11,10 +11,10 @@ source("/Users/timothywiemken/Library/CloudStorage/OneDrive-Pfizer/Documents/Res
 rm(list=setdiff(ls(), "keep.fips"))
 gc
 
-
+# set wd for data reads ----
 setwd("/Users/timothywiemken/OneDrive - Pfizer/Documents/Research/github/COVID disparities/extra data")
 
-### ncpd
+# ncpd ----
 pharm <- vroom::vroom("/Users/timothywiemken/Library/CloudStorage/OneDrive-Pfizer/Documents/Research/github/COVID disparities/extra data/ncpdp_by_fips_cd_11FEB2022.csv")
 pharm %>%
   rename(
@@ -26,7 +26,7 @@ pharm %>%
   )-> pharm
 
 
-### svi
+# svi ----
 test <- vroom::vroom("/Users/timothywiemken/Library/CloudStorage/OneDrive-Pfizer/Documents/Research/github/COVID disparities/extra data/prener.csv")
 svi <- test[,c("GEOID", "SVI")]
 svi %>%
@@ -44,7 +44,7 @@ svi %>%
     fips =  stringr::str_pad(fips, side="left", pad="0", width=5)
   )-> svi
 
-
+# merge ncpd and svi ----
 df <- merge(pharm, svi, by="fips", all=T)
 
 
@@ -76,20 +76,24 @@ df <- merge(pharm, svi, by="fips", all=T)
 # arrow::write_feather(covid[,c("date", "fips", "completeness_pct", "series_complete_18plus", 
 #                               "booster_doses_18plus", "census2019_18pluspop")], "~/Desktop/covidvax.feather")
 # 
+# read some covid data ----
 covid <- arrow::read_feather("/Users/timothywiemken/Library/CloudStorage/OneDrive-Pfizer/Documents/Research/github/COVID disparities/extra data/covidvax.feather")
+# merge ----
 df <- merge(covid, df, by="fips", all.y=T)
 
+# read county health rankings ----
 chr <- vroom::vroom("/Users/timothywiemken/Library/CloudStorage/OneDrive-Pfizer/Documents/Research/github/COVID disparities/extra data/county health 2021.csv")
 chr %>%
   mutate(
     fips =  stringr::str_pad(fips, side="left", pad="0", width=5)
   )-> chr
+# merge ----
 df <- merge(df, chr, by="fips", all.x=T)
 
 
 
 
-
+# clean data a bit ----
 df$census2019_18pluspop <- as.numeric(df$census2019_18pluspop)
 
 df$series_complete_18plus <- as.numeric(df$series_complete_18plus)
@@ -100,16 +104,18 @@ df$pharm_rate <- (as.numeric(df$pharm_count)/df$census2019_18pluspop*100000)/10
 ### rate per 100k
 df$pcp_rate <- df$pcp_rate/10
 
+# subset to >=80% completeness ----
 df <- subset(df, as.numeric(df$completeness_pct)>=80)
 
+# make more rates ----
 df$primary_rate <- df$series_complete_18plus/df$census2019_18pluspop *100000
 df$booster_rate <- df$booster_doses_18plus/df$series_complete_18plus *100000
 
-#df.pre <- subset(df, df$date <
-
+# make pre/post data ----
 df.pre <- subset(df, df$date=="2021-10-01")
 df.post <- subset(df, df$date=="2022-02-01")
 
+# clean, merge, and clean more. ----
 df.subtractme <- df.pre[,c("fips", "series_complete_18plus")]
 df.post <- merge(df.post, df.subtractme, by="fips", suffixes=c("post", "pre"))
 df.post$series_complete_18plus <- df.post$series_complete_18pluspost-df.post$series_complete_18pluspre
@@ -119,13 +125,16 @@ df.post$series_complete_18plus[df.post$series_complete_18plus<0] <-0
 df.all <- subset(df, df$date=="2022-02-22")
 
 df.all$state_fips <- substr(df.all$fips, start=1, stop=2)
+
+# remove non state fips ----
 df.all <- subset(df.all, df.all$state_fips%nin%c(60,66,69,72,78))
 
 
-
+# drop some other fips that dont match ----
 df.all %>%
   filter(fips %in% keep.fips) -> df.all
 
+# compute terties of svi ----
 df.all %>%
   mutate(tertiles = ntile(svi, 3)) %>%
   mutate(tertiles = if_else(tertiles == 1, 'Low', if_else(tertiles == 2, 'Medium', 'High'))) -> df.all
@@ -216,7 +225,7 @@ df.all %>%
 #############################################################################
 #############################################################################
 #############################################################################
-### all time - end feb 1 primary series
+### primary series model ----
 library(rms)
 mod_p<-MASS::glm.nb(series_complete_18plus ~ factor(svi_quant) + 
                       pharm_rate +  pcp_rate + pharm_rate*pcp_rate + 
@@ -239,8 +248,7 @@ pre_primary
 
 
 
-###### booster
-#### post BOOSTER
+###### booster model ----
 df.all <- subset(df.all, !is.na(df.all$booster_doses_18plus))
 df.all <- subset(df.all, df.all$series_complete_18plus!=0)
 df.all$int <- df.all$pharm_rate*df.all$pcp_rate
@@ -321,7 +329,6 @@ summary(out.lag)
 summary(out.error)
 
 
-table(df.all$state_fips)
 
 
 # 
